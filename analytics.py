@@ -92,7 +92,7 @@ def m21_info(mxml, part, measure_start, measure_end, true_tempo):
     frag = iso.write(fmt="midi",fp="frag.midi")
 
     # midi -> wav
-    fs = FluidSynth('def.sf2')
+    fs = FluidSynth('gu.sf2')
     fs.midi_to_audio("frag.midi",f"{os.path.splitext(mxml)[0]}.wav")
 
     #time signature, key
