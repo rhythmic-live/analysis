@@ -1,0 +1,6 @@
+librosa
+music21
+mir_eval
+midi2audio
+fluidsynth
+
