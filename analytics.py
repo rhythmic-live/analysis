@@ -121,7 +121,7 @@ def analyze(mxml, part, measure_start, measure_end, tempo, recording):
     return similarity_score, 9 * tb_score / 4.0 , 3.0 * freq_score, chroma_info
 
 if __name__ == "__main__":
-    #analyze('tlby.musicxml','Alto', 1, 30, 78, "alto_church.wav")
-    #analyze('tlby.musicxml','Tenor', 1, 30, 78, "tenor_church.wav")
-    #analyze('guitar.musicxml','Guitar', 1, 30, 84, "tenor_church.wav")
+    analyze('tlby.musicxml','Alto', 1, 30, 78, "alto_church.wav")
+    analyze('tlby.musicxml','Tenor', 1, 30, 78, "tenor_church.wav")
+    analyze('guitar.musicxml','Guitar', 1, 30, 84, "tenor_church.wav")
     analyze('guitar.musicxml','Guitar', 1, 30, 84, "guitar.wav")
