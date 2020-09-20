@@ -9,10 +9,7 @@ import os
 import mir_eval
 import collections
 import math
-
-#install librosa
-#install music21
-#install midi2audio (fluidsynth)
+import tempfile
 
 def analyze_audio(original, recording, tempo):
     o_y, o_sr = librosa.load(original);
@@ -80,7 +77,7 @@ def analyze_audio(original, recording, tempo):
     # MFCC (mel freq cepstral coefficients for ML)
     return (tempo_score, beat_p, beat_kl, onset_precision, nmse, centroid_sim, f0_sim)
 
-def m21_info(mxml, part, measure_start, measure_end, true_tempo):
+def m21_info(mxml, part, measure_start, measure_end, true_tempo, fg_path, pf_path):
     b = converter.parse(mxml)
     trunc_b = b.measures(measure_start,measure_end)
     iso = (trunc_b.parts.stream())[part].flat
@@ -89,11 +86,11 @@ def m21_info(mxml, part, measure_start, measure_end, true_tempo):
     # USE TEMPORARY DIRECTORIES FOR FRAG AND PERFECT.wav
 
     # mxml -> midi
-    frag = iso.write(fmt="midi",fp="frag.midi")
+    frag = iso.write(fmt="midi",fp=fg_path)
 
     # midi -> wav
     fs = FluidSynth('gu.sf2')
-    fs.midi_to_audio("frag.midi",f"{os.path.splitext(mxml)[0]}.wav")
+    fs.midi_to_audio(fg_path,pf_path)
 
     #time signature, key
     key, ts = iso.analyze('key'), iso.getTimeSignatures()[0].ratioString
@@ -104,14 +101,22 @@ def m21_info(mxml, part, measure_start, measure_end, true_tempo):
 
 
 def analyze(mxml, part, measure_start, measure_end, tempo, recording):
+    fg,fg_path = tempfile.mkstemp(suffix=".midi", prefix="frag", dir=".")
+    pf,pf_path = tempfile.mkstemp(suffix=".wav", prefix=f"{os.path.splitext(mxml)[0]}",dir=".")
+    fg_path, pf_path = os.path.basename(fg_path), os.path.basename(pf_path)
+
     # translate mxml -> midi -> audio
-    key, ts = m21_info(mxml, part, measure_start, measure_end, tempo)
-    perfect = f"{os.path.splitext(mxml)[0]}.wav"
-    tempo_score, beat_p, beat_kl, onset_precision, chroma_info, centroid_sim, f0_sim = analyze_audio(perfect,recording,tempo)
+    key, ts = m21_info(mxml, part, measure_start, measure_end, tempo, fg_path, pf_path)
+    #perfect = f"{os.path.splitext(mxml)[0]}.wav"
+    tempo_score, beat_p, beat_kl, onset_precision, chroma_info, centroid_sim, f0_sim = analyze_audio(pf_path,recording,tempo)
 
     tb_score, freq_score, pitch_score = tempo_score / 18.0 + (beat_p + beat_kl) / 9.0 + onset_precision / 6.0, (centroid_sim + f0_sim) / 6.0, 2.0 * chroma_info / 9.0
     similarity_score = tb_score + freq_score + pitch_score
 
+    os.close(fg)
+    os.close(pf)
+    os.remove(os.path.join('./',fg_path))
+    os.remove(os.path.join('./',pf_path))
     print(f"SIM: {similarity_score}, TEMPO + BEAT: {9.0 * tb_score / 4.0}, FREQ: {freq_score * 3.0}, PITCH: {chroma_info}")
     return similarity_score, 9 * tb_score / 4.0 , 3.0 * freq_score, chroma_info
 
